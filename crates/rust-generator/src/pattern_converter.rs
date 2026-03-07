@@ -21,63 +21,209 @@ static HOOK_FILTER_RE: LazyLock<Regex> = LazyLock::new(|| {
         .expect("invalid HOOK_FILTER_RE")
 });
 
-static FN_CALL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\b([a-z_][a-z0-9_]*)\s*\(").expect("invalid FN_CALL_RE")
-});
+static FN_CALL_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\b([a-z_][a-z0-9_]*)\s*\(").expect("invalid FN_CALL_RE"));
 
 /// Built-in PHP functions that do not need `// TODO:` annotations.
 fn php_builtins() -> HashSet<&'static str> {
     [
-        "explode", "implode", "count", "strlen", "substr", "strpos", "strrev",
-        "strtolower", "strtoupper", "trim", "ltrim", "rtrim", "str_replace",
-        "preg_match", "preg_replace", "preg_split",
-        "array_map", "array_filter", "array_keys", "array_values", "array_merge",
-        "array_push", "array_pop", "array_shift", "array_unshift", "array_slice",
-        "array_search", "array_unique", "array_reverse", "sort", "usort", "in_array",
-        "isset", "empty", "is_null", "is_array", "is_string", "is_int", "is_numeric",
-        "sprintf", "printf", "fprintf", "number_format",
-        "mt_rand", "rand", "date", "time", "mktime", "strtotime", "microtime",
-        "json_encode", "json_decode",
-        "base64_encode", "base64_decode",
-        "md5", "sha1", "hash", "crc32",
-        "htmlspecialchars", "htmlspecialchars_decode", "html_entity_decode",
-        "urlencode", "urldecode", "rawurlencode", "rawurldecode",
-        "defined", "define", "constant",
-        "header", "headers_sent", "ob_start", "ob_get_clean", "ob_end_clean",
-        "file_get_contents", "file_put_contents", "file_exists", "is_file", "is_dir",
-        "dirname", "basename", "pathinfo", "realpath",
-        "extract", "compact", "list",
-        "class_exists", "method_exists", "function_exists", "property_exists",
-        "get_class", "get_object_vars", "get_called_class",
-        "call_user_func", "call_user_func_array",
-        "intval", "floatval", "strval", "boolval", "settype",
-        "min", "max", "abs", "ceil", "floor", "round", "pow", "sqrt", "fmod",
-        "sleep", "usleep", "microtime",
-        "var_dump", "print_r", "var_export",
-        "die", "exit", "trigger_error", "error_log",
+        "explode",
+        "implode",
+        "count",
+        "strlen",
+        "substr",
+        "strpos",
+        "strrev",
+        "strtolower",
+        "strtoupper",
+        "trim",
+        "ltrim",
+        "rtrim",
+        "str_replace",
+        "preg_match",
+        "preg_replace",
+        "preg_split",
+        "array_map",
+        "array_filter",
+        "array_keys",
+        "array_values",
+        "array_merge",
+        "array_push",
+        "array_pop",
+        "array_shift",
+        "array_unshift",
+        "array_slice",
+        "array_search",
+        "array_unique",
+        "array_reverse",
+        "sort",
+        "usort",
+        "in_array",
+        "isset",
+        "empty",
+        "is_null",
+        "is_array",
+        "is_string",
+        "is_int",
+        "is_numeric",
+        "sprintf",
+        "printf",
+        "fprintf",
+        "number_format",
+        "mt_rand",
+        "rand",
+        "date",
+        "time",
+        "mktime",
+        "strtotime",
+        "microtime",
+        "json_encode",
+        "json_decode",
+        "base64_encode",
+        "base64_decode",
+        "md5",
+        "sha1",
+        "hash",
+        "crc32",
+        "htmlspecialchars",
+        "htmlspecialchars_decode",
+        "html_entity_decode",
+        "urlencode",
+        "urldecode",
+        "rawurlencode",
+        "rawurldecode",
+        "defined",
+        "define",
+        "constant",
+        "header",
+        "headers_sent",
+        "ob_start",
+        "ob_get_clean",
+        "ob_end_clean",
+        "file_get_contents",
+        "file_put_contents",
+        "file_exists",
+        "is_file",
+        "is_dir",
+        "dirname",
+        "basename",
+        "pathinfo",
+        "realpath",
+        "extract",
+        "compact",
+        "list",
+        "class_exists",
+        "method_exists",
+        "function_exists",
+        "property_exists",
+        "get_class",
+        "get_object_vars",
+        "get_called_class",
+        "call_user_func",
+        "call_user_func_array",
+        "intval",
+        "floatval",
+        "strval",
+        "boolval",
+        "settype",
+        "min",
+        "max",
+        "abs",
+        "ceil",
+        "floor",
+        "round",
+        "pow",
+        "sqrt",
+        "fmod",
+        "sleep",
+        "usleep",
+        "microtime",
+        "var_dump",
+        "print_r",
+        "var_export",
+        "die",
+        "exit",
+        "trigger_error",
+        "error_log",
         // File I/O
-        "fopen", "fclose", "fread", "fwrite", "fgets", "fputs", "feof",
-        "opendir", "readdir", "closedir", "scandir",
-        "unlink", "rename", "copy", "mkdir", "rmdir", "chmod", "chown",
-        "clearstatcache", "stat", "lstat", "filemtime", "filesize",
+        "fopen",
+        "fclose",
+        "fread",
+        "fwrite",
+        "fgets",
+        "fputs",
+        "feof",
+        "opendir",
+        "readdir",
+        "closedir",
+        "scandir",
+        "unlink",
+        "rename",
+        "copy",
+        "mkdir",
+        "rmdir",
+        "chmod",
+        "chown",
+        "clearstatcache",
+        "stat",
+        "lstat",
+        "filemtime",
+        "filesize",
         // String (PHP 8+)
-        "str_contains", "str_starts_with", "str_ends_with", "str_pad",
-        "str_split", "str_word_count", "str_repeat",
-        "nl2br", "strip_tags", "wordwrap", "chunk_split",
-        "substr_count", "substr_replace", "str_ireplace",
+        "str_contains",
+        "str_starts_with",
+        "str_ends_with",
+        "str_pad",
+        "str_split",
+        "str_word_count",
+        "str_repeat",
+        "nl2br",
+        "strip_tags",
+        "wordwrap",
+        "chunk_split",
+        "substr_count",
+        "substr_replace",
+        "str_ireplace",
         // Array extras
-        "array_combine", "array_diff", "array_intersect", "array_flip",
-        "array_fill", "array_splice", "array_chunk", "array_pad",
-        "array_count_values", "array_column", "array_multisort",
+        "array_combine",
+        "array_diff",
+        "array_intersect",
+        "array_flip",
+        "array_fill",
+        "array_splice",
+        "array_chunk",
+        "array_pad",
+        "array_count_values",
+        "array_column",
+        "array_multisort",
         // Type & var
-        "unset", "list", "setcookie", "parse_str", "parse_url",
-        "http_build_query", "number_format", "printf",
+        "unset",
+        "list",
+        "setcookie",
+        "parse_str",
+        "parse_url",
+        "http_build_query",
+        "number_format",
+        "printf",
         // Math extras
-        "pi", "log", "log10", "exp", "sin", "cos", "tan",
+        "pi",
+        "log",
+        "log10",
+        "exp",
+        "sin",
+        "cos",
+        "tan",
         // Misc
-        "range", "compact", "array_walk", "array_walk_recursive",
-        "sprintf", "vsprintf", "sscanf", "number_format",
-        "nl2br", "wordwrap",
+        "range",
+        "compact",
+        "array_walk",
+        "array_walk_recursive",
+        "sprintf",
+        "vsprintf",
+        "sscanf",
+        "number_format",
+        "nl2br",
+        "wordwrap",
     ]
     .iter()
     .copied()
@@ -193,8 +339,8 @@ impl PatternConverter {
             std::fs::write(&output_path, &rust_code)?;
             module_names.push(module_name);
 
-            let fns_converted = file.functions.len()
-                + file.classes.iter().map(|c| c.methods.len()).sum::<usize>();
+            let fns_converted =
+                file.functions.len() + file.classes.iter().map(|c| c.methods.len()).sum::<usize>();
 
             converted.push(PatternConvertedFile {
                 original_path: file.path.clone(),
@@ -247,23 +393,26 @@ impl PatternConverter {
         let params = self.convert_params(&func.params);
 
         // Check for a known implementation first so we can get its return type override.
-        let (ret, body, todos) = if let Some((ret_override, impl_body)) =
-            self.known_implementation(&func.name)
-        {
-            let ret_str = ret_override
-                .map(|r| format!(" -> {r}"))
-                .or_else(|| func.return_type.as_deref().map(|t| format!(" -> {}", self.map_type(t))))
-                .unwrap_or_default();
-            (ret_str, format!("    {}", impl_body), 0)
-        } else {
-            let ret_str = func
-                .return_type
-                .as_deref()
-                .map(|t| format!(" -> {}", self.map_type(t)))
-                .unwrap_or_default();
-            let (b, t) = self.convert_body(&func.body, &func.name);
-            (ret_str, b, t)
-        };
+        let (ret, body, todos) =
+            if let Some((ret_override, impl_body)) = self.known_implementation(&func.name) {
+                let ret_str = ret_override
+                    .map(|r| format!(" -> {r}"))
+                    .or_else(|| {
+                        func.return_type
+                            .as_deref()
+                            .map(|t| format!(" -> {}", self.map_type(t)))
+                    })
+                    .unwrap_or_default();
+                (ret_str, format!("    {}", impl_body), 0)
+            } else {
+                let ret_str = func
+                    .return_type
+                    .as_deref()
+                    .map(|t| format!(" -> {}", self.map_type(t)))
+                    .unwrap_or_default();
+                let (b, t) = self.convert_body(&func.body, &func.name);
+                (ret_str, b, t)
+            };
 
         let code = format!("{pub_kw}fn {fn_name}({params}){ret} {{\n{body}\n}}\n");
         (code, todos)
@@ -368,10 +517,9 @@ impl PatternConverter {
         // PHP language constructs and common words that appear before `(`
         // but are NOT function calls.
         let false_positive_words: HashSet<&str> = [
-            "and", "or", "not", "if", "else", "elseif", "for", "foreach",
-            "while", "do", "switch", "case", "return", "new", "true", "false",
-            "null", "list", "array", "echo", "print", "include", "require",
-            "match", "catch", "finally",
+            "and", "or", "not", "if", "else", "elseif", "for", "foreach", "while", "do", "switch",
+            "case", "return", "new", "true", "false", "null", "list", "array", "echo", "print",
+            "include", "require", "match", "catch", "finally",
         ]
         .iter()
         .copied()
@@ -406,7 +554,8 @@ impl PatternConverter {
     /// Returns `(return_type_override, body)`.
     fn known_implementation(&self, func_name: &str) -> Option<(Option<&'static str>, String)> {
         match func_name {
-            "hello_dolly_get_lyric" => Some((Some("String"),
+            "hello_dolly_get_lyric" => Some((
+                Some("String"),
                 r#"let lyrics = "Hello, Dolly\nWell, hello, Dolly\n\
 It's so nice to have you back where you belong\nYou're lookin' swell, Dolly\n\
 I can tell, Dolly\nYou're still glowin', you're still crowin'\nYou're still goin' strong";
@@ -498,7 +647,13 @@ I can tell, Dolly\nYou're still glowin', you're still crowin'\nYou're still goin
 pub fn sanitize_ident(name: &str) -> String {
     let sanitized: String = name
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect();
     // Collapse multiple consecutive underscores
     let mut result = String::with_capacity(sanitized.len());
@@ -527,10 +682,9 @@ pub fn sanitize_ident(name: &str) -> String {
 
 /// Rust keywords that must be escaped with `r#` when used as identifiers.
 const RUST_KEYWORDS: &[&str] = &[
-    "as", "async", "await", "break", "const", "continue", "crate", "dyn",
-    "else", "enum", "extern", "false", "fn", "for", "if", "impl", "in",
-    "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
-    "self", "static", "struct", "super", "trait", "true", "type", "union",
+    "as", "async", "await", "break", "const", "continue", "crate", "dyn", "else", "enum", "extern",
+    "false", "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub",
+    "ref", "return", "self", "static", "struct", "super", "trait", "true", "type", "union",
     "unsafe", "use", "where", "while", "yield",
 ];
 
@@ -574,7 +728,10 @@ mod tests {
 
     #[test]
     fn snake_case_wordpress_fn() {
-        assert_eq!(to_snake_case("hello_dolly_get_lyric"), "hello_dolly_get_lyric");
+        assert_eq!(
+            to_snake_case("hello_dolly_get_lyric"),
+            "hello_dolly_get_lyric"
+        );
     }
 
     // ── map_type ─────────────────────────────────────────────
@@ -696,11 +853,7 @@ Version: 1.7.2
 function hello_dolly_get_lyric() {}
 add_action( 'admin_notices', 'hello_dolly' );
 "#;
-        let file = php_parser::analyze_file(
-            std::path::Path::new("hello.php"),
-            src,
-        )
-        .unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("hello.php"), src).unwrap();
         let conv = converter();
         let (code, _) = conv.convert_file(&file);
         assert!(code.contains("Plugin: Hello Dolly"));
@@ -713,11 +866,7 @@ add_action( 'admin_notices', 'hello_dolly' );
 function hello_dolly() {}
 add_action( 'admin_notices', 'hello_dolly' );
 "#;
-        let file = php_parser::analyze_file(
-            std::path::Path::new("hello.php"),
-            src,
-        )
-        .unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("hello.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("hooks::add_action"));
         assert!(code.contains("admin_notices"));
@@ -726,8 +875,7 @@ add_action( 'admin_notices', 'hello_dolly' );
     #[test]
     fn convert_function_name_snake_case() {
         let src = "<?php\nfunction helloWorld() { return 1; }\n";
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("fn hello_world"));
     }
@@ -735,8 +883,7 @@ add_action( 'admin_notices', 'hello_dolly' );
     #[test]
     fn convert_typed_params() {
         let src = "<?php\nfunction greet(string $name, int $age) { }\n";
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("name: String"));
         assert!(code.contains("age: i64"));
@@ -745,8 +892,7 @@ add_action( 'admin_notices', 'hello_dolly' );
     #[test]
     fn convert_return_type_bool() {
         let src = "<?php\nfunction is_ready(): bool { return false; }\n";
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("-> bool"));
     }
@@ -754,8 +900,7 @@ add_action( 'admin_notices', 'hello_dolly' );
     #[test]
     fn convert_nullable_return_type() {
         let src = "<?php\nfunction find(int $id): ?string { return null; }\n";
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("-> Option<String>"));
     }
@@ -763,8 +908,7 @@ add_action( 'admin_notices', 'hello_dolly' );
     #[test]
     fn todo_count_nonzero_for_complex_body() {
         let src = "<?php\nfunction save() { global $wpdb; $wpdb->insert('t', []); }\n";
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (_, todos) = converter().convert_file(&file);
         assert!(todos > 0);
     }
@@ -778,8 +922,7 @@ class MyPlugin {
     public function getName(): string { return $this->name; }
 }
 "#;
-        let file =
-            php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
+        let file = php_parser::analyze_file(std::path::Path::new("t.php"), src).unwrap();
         let (code, _) = converter().convert_file(&file);
         assert!(code.contains("pub struct MyPlugin"));
         assert!(code.contains("pub name: String"));
