@@ -105,7 +105,18 @@ async fn main() -> Result<()> {
             model,
             max_fix_iterations,
             mode,
-        } => cmd_convert(&path, &output, &profile, &mode, verify, model, max_fix_iterations).await,
+        } => {
+            cmd_convert(
+                &path,
+                &output,
+                &profile,
+                &mode,
+                verify,
+                model,
+                max_fix_iterations,
+            )
+            .await
+        }
         Commands::ConvertFile {
             path,
             output,
@@ -291,10 +302,7 @@ async fn cmd_convert_file(
         info!("Using PatternConverter (LLM-free) for {}", path.display());
         let converter = rust_generator::PatternConverter::new(profile);
         let (code, todos) = converter.convert_file(&php_file);
-        info!(
-            "Pattern conversion complete: {} TODO items",
-            todos
-        );
+        info!("Pattern conversion complete: {} TODO items", todos);
         code
     } else {
         let llm = create_llm_provider(model)?;
