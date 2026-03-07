@@ -23,6 +23,22 @@ Verified Rust project
 
 This is NOT a traditional transpiler. It's an **AI agent** that understands PHP semantics and writes idiomatic Rust — the same process a human engineer would follow, but at scale.
 
+## Version Compatibility
+
+**Initial target: PHP 8.x.** Then expanding backward — because we won't abandon anyone.
+
+| PHP Version | Priority | Notes |
+|-------------|----------|-------|
+| 8.0 - 8.4 | **First** | Strict types, union types, named args. Easiest to convert. |
+| 7.4 | Second | Return types, typed properties. WordPress 6.x minimum. |
+| 7.0 - 7.3 | Third | Scalar type hints introduced. Large installed base. |
+| 5.6 | Fourth | No type hints = AI infers types freely. WordPress 4.x era. |
+| 5.3 - 5.5 | Fifth | Namespaces, traits. Still running on forgotten servers. |
+
+Older versions are simpler (fewer features = fewer conversion patterns). The hardest version to convert is the latest. Once 8.x works, past versions follow naturally.
+
+Auto-detection: `php-to-rust analyze` detects the PHP version and selects the appropriate conversion profile.
+
 ## Architecture
 
 ```
