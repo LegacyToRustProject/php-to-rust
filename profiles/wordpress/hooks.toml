@@ -1,0 +1,20 @@
+instructions = """
+WordPress uses a hook system (actions and filters).
+- Actions: side-effect callbacks triggered at specific points (add_action/do_action).
+- Filters: data transformation callbacks (add_filter/apply_filters).
+
+In Rust, convert these to a HookRegistry pattern:
+- `add_action('hook_name', 'callback', priority)` → `hooks.add_action("hook_name", callback, priority)`
+- `add_filter('hook_name', 'callback', priority)` → `hooks.add_filter("hook_name", callback, priority)`
+- `do_action('hook_name', $args)` → `hooks.do_action("hook_name", &args)`
+- `apply_filters('hook_name', $value, $args)` → `hooks.apply_filters("hook_name", value, &args)`
+
+If the callback is a string (function name), convert it to a function reference.
+If it's a closure, convert it to a Rust closure.
+If it's an array [$object, 'method'], convert to a method call.
+"""
+
+[patterns]
+"register_activation_hook" = "plugin::on_activate"
+"register_deactivation_hook" = "plugin::on_deactivate"
+"register_uninstall_hook" = "plugin::on_uninstall"

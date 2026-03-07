@@ -1,0 +1,10 @@
+[patterns]
+"$wpdb->get_results" = "db::query_all"
+"$wpdb->get_row" = "db::query_one"
+"$wpdb->get_var" = "db::query_scalar"
+"$wpdb->insert" = "db::insert"
+"$wpdb->update" = "db::update"
+"$wpdb->delete" = "db::delete"
+"$wpdb->prepare" = "db::prepare"
+"$wpdb->query" = "db::execute"
+"$wpdb->prefix" = "db::table_prefix()"
