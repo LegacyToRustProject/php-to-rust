@@ -71,7 +71,7 @@ impl Generator {
                         .file_stem()
                         .unwrap_or_default()
                         .to_string_lossy()
-                        .replace('-', "_")
+                        .replace(['-', '.'], "_")
                         .to_lowercase();
 
                     let output_path = src_dir.join(format!("{}.rs", module_name));
