@@ -37,6 +37,45 @@
 "plugin_dir_path" = "plugin::dir_path"
 "is_admin" = "context::is_admin"
 "current_user_can" = "auth::current_user_can"
+# URL helpers
+"admin_url" = "url::admin_url"
+"site_url" = "url::site_url"
+"home_url" = "url::home_url"
+"trailingslashit" = "url::trailingslashit"
+"add_query_arg" = "url::add_query_arg"
+"wp_safe_redirect" = "url::safe_redirect"
+# Caching
+"wp_cache_get" = "cache::get"
+"wp_cache_set" = "cache::set"
+"wp_cache_delete" = "cache::delete"
+"wp_cache_flush" = "cache::flush"
+# Scheduling
+"wp_schedule_event" = "cron::schedule_event"
+"wp_schedule_single_event" = "cron::schedule_single_event"
+"wp_next_scheduled" = "cron::next_scheduled"
+"wp_unschedule_event" = "cron::unschedule_event"
+# REST API
+"rest_ensure_response" = "rest::ensure_response"
+"register_rest_route" = "rest::register_route"
+# Users
+"get_current_user_id" = "auth::current_user_id"
+"get_userdata" = "users::get"
+"wp_get_current_user" = "auth::current_user"
+# Comments
+"get_comment" = "comments::get"
+"wp_update_comment" = "comments::update"
+"wp_insert_comment" = "comments::insert"
+# i18n extras
+"_n" = "i18n::translate_plural"
+"esc_html__" = "i18n::esc_html_translate"
+"esc_html_e" = "i18n::esc_html_translate_echo"
+# Formatting
+"number_format_i18n" = "format::number_i18n"
+"human_time_diff" = "format::human_time_diff"
+"check_admin_referer" = "nonce::check_admin_referer"
+"wp_remote_get" = "http::get"
+"wp_remote_post" = "http::post"
+"wp_remote_request" = "http::request"
 
 [types]
 "WP_Post" = "Post"

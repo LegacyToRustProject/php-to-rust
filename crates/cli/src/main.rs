@@ -48,6 +48,11 @@ enum Commands {
         /// Maximum fix loop iterations.
         #[arg(long, default_value = "10")]
         max_fix_iterations: usize,
+
+        /// Conversion mode: "llm" (default, requires ANTHROPIC_API_KEY) or
+        /// "pattern" (LLM-free, deterministic pattern matching).
+        #[arg(long, default_value = "llm")]
+        mode: String,
     },
 
     /// Convert a single PHP file to Rust.
@@ -63,11 +68,16 @@ enum Commands {
         #[arg(long, default_value = "generic")]
         profile: String,
 
-        /// LLM provider to use.
+        /// Conversion mode: "llm" (default, requires ANTHROPIC_API_KEY) or
+        /// "pattern" (LLM-free, deterministic pattern matching).
+        #[arg(long, default_value = "llm")]
+        mode: String,
+
+        /// LLM provider to use (only used in llm mode).
         #[arg(long, default_value = "claude")]
         llm: String,
 
-        /// Model name for the LLM provider.
+        /// Model name for the LLM provider (only used in llm mode).
         #[arg(long)]
         model: Option<String>,
     },
@@ -94,14 +104,27 @@ async fn main() -> Result<()> {
             llm: _,
             model,
             max_fix_iterations,
-        } => cmd_convert(&path, &output, &profile, verify, model, max_fix_iterations).await,
+            mode,
+        } => {
+            cmd_convert(
+                &path,
+                &output,
+                &profile,
+                &mode,
+                verify,
+                model,
+                max_fix_iterations,
+            )
+            .await
+        }
         Commands::ConvertFile {
             path,
             output,
             profile,
+            mode,
             llm: _,
             model,
-        } => cmd_convert_file(&path, output.as_deref(), &profile, model).await,
+        } => cmd_convert_file(&path, output.as_deref(), &profile, &mode, model).await,
     }
 }
 
@@ -170,6 +193,7 @@ async fn cmd_convert(
     path: &Path,
     output: &Path,
     profile_name: &str,
+    mode: &str,
     verify: bool,
     model: Option<String>,
     max_fix_iterations: usize,
@@ -184,57 +208,73 @@ async fn cmd_convert(
     );
 
     let profile = load_profile(profile_name)?;
-    let llm = create_llm_provider(model)?;
-    let generator = rust_generator::Generator::new(llm, profile);
 
-    let converted = generator.convert_project(&project, output).await?;
+    if mode == "pattern" {
+        info!("Using PatternConverter (LLM-free)");
+        let converter = rust_generator::PatternConverter::new(profile);
+        let results = converter.convert_project(&project, output)?;
+        let total_todos: usize = results.iter().map(|r| r.todos).sum();
+        println!(
+            "Converted {}/{} files to {} ({} TODO items)",
+            results.len(),
+            project.files.len(),
+            output.display(),
+            total_todos
+        );
+        if verify {
+            println!("Note: --verify skipped in pattern mode (todo!() stubs present)");
+        }
+    } else {
+        let llm = create_llm_provider(model.clone())?;
+        let generator = rust_generator::Generator::new(llm, profile);
+        let converted = generator.convert_project(&project, output).await?;
+        println!(
+            "Converted {}/{} files to {}",
+            converted.len(),
+            project.files.len(),
+            output.display()
+        );
 
-    println!(
-        "Converted {}/{} files to {}",
-        converted.len(),
-        project.files.len(),
-        output.display()
-    );
+        if verify {
+            info!("Running verification...");
+            let compile_result = verifier::cargo_check(output)?;
+            match compile_result {
+                verifier::CompileResult::Success => {
+                    println!("Verification: compilation PASSED");
+                }
+                verifier::CompileResult::Errors(ref errors) => {
+                    println!("Verification: compilation FAILED ({} errors)", errors.len());
 
-    if verify {
-        info!("Running verification...");
-        let compile_result = verifier::cargo_check(output)?;
-        match compile_result {
-            verifier::CompileResult::Success => {
-                println!("Verification: compilation PASSED");
-            }
-            verifier::CompileResult::Errors(ref errors) => {
-                println!("Verification: compilation FAILED ({} errors)", errors.len());
-
-                if max_fix_iterations > 0 {
-                    println!(
-                        "Running fix loop (max {} iterations)...",
-                        max_fix_iterations
-                    );
-                    let fix_llm = create_llm_provider(None)?;
-                    let fix_loop = verifier::FixLoop::new(fix_llm, max_fix_iterations);
-
-                    for file in &converted {
-                        let code = std::fs::read_to_string(&file.output_path)?;
-                        let (fixed, iters) = fix_loop.run(&code, output, &file.output_path).await?;
-                        std::fs::write(&file.output_path, &fixed)?;
+                    if max_fix_iterations > 0 {
                         println!(
-                            "  Fixed {} in {} iterations",
-                            file.output_path.display(),
-                            iters
+                            "Running fix loop (max {} iterations)...",
+                            max_fix_iterations
                         );
-                    }
+                        let fix_llm = create_llm_provider(None)?;
+                        let fix_loop = verifier::FixLoop::new(fix_llm, max_fix_iterations);
 
-                    // Re-check
-                    match verifier::cargo_check(output)? {
-                        verifier::CompileResult::Success => {
-                            println!("Verification after fixes: compilation PASSED");
-                        }
-                        verifier::CompileResult::Errors(errors) => {
+                        for file in &converted {
+                            let code = std::fs::read_to_string(&file.output_path)?;
+                            let (fixed, iters) =
+                                fix_loop.run(&code, output, &file.output_path).await?;
+                            std::fs::write(&file.output_path, &fixed)?;
                             println!(
-                                "Verification after fixes: still {} errors remaining",
-                                errors.len()
+                                "  Fixed {} in {} iterations",
+                                file.output_path.display(),
+                                iters
                             );
+                        }
+
+                        match verifier::cargo_check(output)? {
+                            verifier::CompileResult::Success => {
+                                println!("Verification after fixes: compilation PASSED");
+                            }
+                            verifier::CompileResult::Errors(errors) => {
+                                println!(
+                                    "Verification after fixes: still {} errors remaining",
+                                    errors.len()
+                                );
+                            }
                         }
                     }
                 }
@@ -249,6 +289,7 @@ async fn cmd_convert_file(
     path: &PathBuf,
     output: Option<&std::path::Path>,
     profile_name: &str,
+    mode: &str,
     model: Option<String>,
 ) -> Result<()> {
     let source = std::fs::read_to_string(path)
@@ -256,12 +297,21 @@ async fn cmd_convert_file(
 
     let php_file = php_parser::analyze_file(path, &source)?;
     let profile = load_profile(profile_name)?;
-    let llm = create_llm_provider(model)?;
-    let generator = rust_generator::Generator::new(llm, profile);
 
-    let rust_code = generator.convert_file(&php_file).await?;
+    let rust_code = if mode == "pattern" {
+        info!("Using PatternConverter (LLM-free) for {}", path.display());
+        let converter = rust_generator::PatternConverter::new(profile);
+        let (code, todos) = converter.convert_file(&php_file);
+        info!("Pattern conversion complete: {} TODO items", todos);
+        code
+    } else {
+        let llm = create_llm_provider(model)?;
+        let generator = rust_generator::Generator::new(llm, profile);
+        generator.convert_file(&php_file).await?
+    };
 
     if let Some(out_path) = output {
+        std::fs::create_dir_all(out_path.parent().unwrap_or(std::path::Path::new(".")))?;
         std::fs::write(out_path, &rust_code)?;
         println!("Written to {}", out_path.display());
     } else {
